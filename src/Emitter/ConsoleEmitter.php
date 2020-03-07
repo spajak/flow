@@ -1,0 +1,54 @@
+<?php
+
+namespace Flow;
+
+use Flow\EmitterInterface;
+use Psr\Http\Message\ResponseInterface;
+use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
+
+/**
+ * Emitt response to the console output
+ *
+ * @author Sebastian Pająk <spconv@gmail.com>
+ */
+class ConsoleEmitter implements EmitterInterface
+{
+    protected $output;
+
+    public function __construct(OutputInterface $output = null)
+    {
+        $this->output = $output ?? new ConsoleOutput;
+    }
+
+    public function emit(ResponseInterface $response): void
+    {
+        $this->emitStatusLine($response);
+        $this->emitHeaders($response);
+        $this->emitBody($response);
+    }
+
+    private function emitStatusLine(ResponseInterface $response): void
+    {
+        $this->output->writeln(sprintf(
+            '<fg=green>HTTP/%s %s %s</>',
+            $response->getProtocolVersion(),
+            $response->getStatusCode(),
+            $response->getReasonPhrase()
+        ));
+    }
+
+    private function emitHeaders(ResponseInterface $response): void
+    {
+        foreach ($response->getHeaders() as $header => $values) {
+            $name  = str_replace(' ', '-', ucwords(str_replace('-', ' ', $header)));
+            foreach ($values as $value) {
+                $this->output->writeln(sprintf('%s: %s', $name, $value));
+            }
+        }
+    }
+
+    private function emitBody(ResponseInterface $response): void
+    {
+        $this->output->write("\n".$response->getBody()."\n");
+    }
+}
