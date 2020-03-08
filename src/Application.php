@@ -25,20 +25,15 @@ use Nyholm\Psr7Server\ServerRequestCreator;
 final class Application
 {
     private $bootstrapped;
-    private $containerBuilder;
-    private $container;
     private $broker;
     private $routeCollector;
     private $console;
     private $httpFactory;
+    private $containerBuilder;
+    private $container;
 
     public function __construct()
     {
-        // DI Container
-        $this->containerBuilder = new ContainerBuilder;
-        $this->containerBuilder->useAutowiring(false);
-        $this->containerBuilder->useAnnotations(false);
-
         // Broker
         $this->broker = new Broker;
 
@@ -53,6 +48,16 @@ final class Application
 
         // Psr7 Factory
         $this->httpFactory = new HttpFactory;
+
+        // DI Container
+        $this->containerBuilder = new ContainerBuilder;
+        $this->containerBuilder->useAutowiring(false);
+        $this->containerBuilder->useAnnotations(false);
+
+        $this->containerBuilder->addDefinitions([
+            'console' => function() { return $this->console; },
+            'http_factory' => function() { return $this->httpFactory; }
+        ]);
     }
 
     public function getContainerBuilder(): ContainerBuilder
