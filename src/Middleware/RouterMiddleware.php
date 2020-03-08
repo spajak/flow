@@ -25,19 +25,21 @@ class RouterMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $uri = (string) $request->getUri();
-        $routeInfo = $this->dispatcher->dispatch($request->getMethod(), $uri);
+        $routeInfo = $this->dispatcher->dispatch(
+            $request->getMethod(),
+            $request->getUri()->getPath()
+        );
 
         switch ($routeInfo[0]) {
-            case FastRoute\Dispatcher::NOT_FOUND:
+            case Dispatcher::NOT_FOUND:
                 $response = $this->responseFactory->createResponse(404);
                 break;
-            case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
+            case Dispatcher::METHOD_NOT_ALLOWED:
                 $response = $this->responseFactory
                     ->createResponse(405)
                     ->withHeader('allow', implode(', ', $routeInfo[1]));
                 break;
-            case FastRoute\Dispatcher::FOUND:
+            case Dispatcher::FOUND:
                 $response = $this->invokeRouteHandler($request, $routeInfo);
                 break;
             default:
@@ -50,11 +52,11 @@ class RouterMiddleware implements MiddlewareInterface
     private function invokeRouteHandler(RequestInterface $request, array $routeInfo)
     {
         $invoker = new Invoker;
-        $hadler = $routeInfo[1];
+        $handler = $routeInfo[1];
         $parameters = $routeInfo[2];
         if (!isset($parameters['request'])) {
             $parameters['request'] = $request;
         }
-        return $invoke->call($handler, $parameters);
+        return $invoker->call($handler, $parameters);
     }
 }
