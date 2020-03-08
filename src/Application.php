@@ -117,7 +117,7 @@ final class Application
 
         $dispatcher = new RouteDispatcher($this->routeCollector->getData());
         $router = new RouterMiddleware($dispatcher, $this->httpFactory);
-        $this->broker->append($outer);
+        $this->broker->append($router);
 
         $this->bootstrapped = true;
     }
