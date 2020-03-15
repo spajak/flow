@@ -11,6 +11,7 @@ use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
 use FastRoute\RouteParser\Std as StdRouteParser;
 use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
 use Symfony\Component\Console\Application as Console;
+use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
 use Psr\Http\Message\ServerRequestInterface;
 use Flow\Middleware\RouterMiddleware;
 use Flow\Emitter\HttpEmitter;
@@ -78,6 +79,12 @@ final class Application
     public function getConsole(): Console
     {
         return $this->console;
+    }
+
+    public function setConsoleCommandsLoader(array $commands)
+    {
+        $loader = new FactoryCommandLoader($commands);
+        $this->console->setCommandLoader($loader);
     }
 
     public function getHttpFactory(): HttpFactory
