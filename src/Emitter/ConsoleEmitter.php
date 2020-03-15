@@ -43,8 +43,7 @@ class ConsoleEmitter implements ConsoleEmitterInterface
 
     private function emitHeaders(ResponseInterface $response): void
     {
-        foreach ($response->getHeaders() as $header => $values) {
-            $name  = str_replace(' ', '-', ucwords(str_replace('-', ' ', $header)));
+        foreach ($response->getHeaders() as $name => $values) {
             foreach ($values as $value) {
                 $this->output->writeln(sprintf('%s: %s', $name, $value));
             }

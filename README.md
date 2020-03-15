@@ -1,3 +1,4 @@
+
 # Flow
 
 Simple PHP HTTP application base using:
@@ -10,36 +11,44 @@ Simple PHP HTTP application base using:
 
 ## Rationale
 
-- Make lightweight and customizable apps fast.
-- Basing on standardized components.
-- Not being tied to any specific framework.
+- Basing on standardized interfaces and well tested components;
+- Not being tied to any specific framework;
+- Being able to make lightweight and customizable apps fast with just PHP's `include`s and anonymous functions;
 
 ## Usage
 
 ```php
 $app = new Flow\Application;
+```
 
-// Register services (using: php-di/php-di)
-// -----------------------------------------------------------------------------
+Register services (using: [php-di/php-di](https://github.com/PHP-DI/PHP-DI)):
+
+```php
 $app->getContainerBuilder()->addDefinitions([
     'hello' => function() {
-        return new class { public function sayHello($name) {
-            return "Hello {$name}!";
-        }};
+        return new class {
+            public function sayHello($name) { return "Hello {$name}!"; }
+        };
     }
 ]);
+```
 
-// Register routes (using: nikic/fast-route)
-// -----------------------------------------------------------------------------
+Register routes (using: [nikic/fast-route](https://github.com/nikic/FastRoute)):
+
+```php
 $app->getRouteCollector()->get('/hello[/{name}]', function($request, $name = 'World') use ($app) {
-    $service = $app->getContainer()->get('hello');
-    $response = $app->getHttpFactory()->createResponse(200);
-    $response->getBody()->write($service->sayHello($name));
+    $container = $app->getContainer();
+    $response = $container->get('http_factory')->createResponse(200);
+    $response->getBody()->write(
+        $container->get('hello')->sayHello($name)
+    );
     return $response;
 });
+```
 
-// Register console commands (using: symfony/console)
-// -----------------------------------------------------------------------------
+Register console commands (using: [symfony/console](https://github.com/symfony/console)):
+
+```php
 $app->getConsole()->register('hello')
     ->setDescription('Say hello')
     ->addArgument('name', null, 'Your name', 'World')
@@ -47,9 +56,38 @@ $app->getConsole()->register('hello')
         $service = $app->getContainer()->get('hello');
         $output->writeLn($service->sayHello($input->getArgument('name')));
     });
+```
 
+…or using lazy command factories:
+
+```php
+use Flow\Command\RequestCommand;
+use Flow\Emitter\ConsoleEmitter;
+
+$app->setConsoleCommandsLoader([
+    'request' => function() use ($app) {
+        return new RequestCommand(
+            $app->getServerRequestCreator(),
+            $app->getBroker(),
+            new ConsoleEmitter
+        );
+    }
+]);
+```
+
+At the end of the script, simply run the Application:
+
+```php
 $app->run();
 ```
+
+Try it from terminal:
+
+```bash
+$ php examples/main.php hello "Grim Reaper"
+$ php examples/main.php request GET /hello
+```
+
 ## TODO
 
 - Some kind of helper to simplify creation of the responses.

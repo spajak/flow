@@ -49,7 +49,7 @@ class RouterMiddleware implements MiddlewareInterface
         return $response;
     }
 
-    private function invokeRouteHandler(RequestInterface $request, array $routeInfo)
+    private function invokeRouteHandler(RequestInterface $request, array $routeInfo): ResponseInterface
     {
         $invoker = new Invoker;
         $handler = $routeInfo[1];

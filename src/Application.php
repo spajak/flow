@@ -16,6 +16,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Flow\Middleware\RouterMiddleware;
 use Flow\Emitter\HttpEmitter;
 use Nyholm\Psr7\Factory\Psr17Factory as HttpFactory;
+use Nyholm\Psr7Server\ServerRequestCreatorInterface;
 use Nyholm\Psr7Server\ServerRequestCreator;
 
 /**
@@ -35,7 +36,7 @@ final class Application
 
     public function __construct()
     {
-        // Broker
+        // Broker (Handler & Middleware)
         $this->broker = new Broker;
 
         // Route Collector
@@ -47,7 +48,7 @@ final class Application
         // Console
         $this->console = new Console;
 
-        // Psr7 Factory
+        // Psr7 Factories
         $this->httpFactory = new HttpFactory;
 
         // DI Container
@@ -100,6 +101,16 @@ final class Application
         return $this->container;
     }
 
+    public function getServerRequestCreator(): ServerRequestCreatorInterface
+    {
+        return new ServerRequestCreator(
+            $this->httpFactory, // ServerRequestFactory
+            $this->httpFactory, // UriFactory
+            $this->httpFactory, // UploadedFileFactory
+            $this->httpFactory  // StreamFactory
+        );
+    }
+
     public function run(): void
     {
         $this->bootstrap();
@@ -107,10 +118,9 @@ final class Application
         if (php_sapi_name() === 'cli') {
             $this->console->run();
         } else {
-            $request = $this->createServerRequest();
+            $request = $this->getServerRequestCreator()->fromGlobals();
             $response = $this->broker->handle($request);
-            $emitter = new HttpEmitter;
-            $emitter->emit($response);
+            (new HttpEmitter)->emit($response);
         }
     }
 
@@ -127,18 +137,5 @@ final class Application
         $this->broker->append($router);
 
         $this->bootstrapped = true;
-    }
-
-    private function createServerRequest(): ServerRequestInterface
-    {
-        $creator = new ServerRequestCreator(
-            $this->httpFactory, // ServerRequestFactory
-            $this->httpFactory, // UriFactory
-            $this->httpFactory, // UploadedFileFactory
-            $this->httpFactory  // StreamFactory
-        );
-
-        $request = $creator->fromGlobals();
-        return $request;
     }
 }
