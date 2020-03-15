@@ -1,8 +1,7 @@
 <?php
 
-namespace Flow;
+namespace Flow\Emitter;
 
-use Flow\EmitterInterface;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
 
@@ -11,13 +10,18 @@ use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */
-class ConsoleEmitter implements EmitterInterface
+class ConsoleEmitter implements ConsoleEmitterInterface
 {
     protected $output;
 
     public function __construct(OutputInterface $output = null)
     {
         $this->output = $output ?? new ConsoleOutput;
+    }
+
+    public function setConsoleOutput(OutputInterface $output): void
+    {
+        $this->output = $output;
     }
 
     public function emit(ResponseInterface $response): void
