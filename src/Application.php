@@ -20,7 +20,7 @@ use Nyholm\Psr7Server\ServerRequestCreatorInterface;
 use Nyholm\Psr7Server\ServerRequestCreator;
 
 /**
- * Main application class
+ * Main application class.
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */

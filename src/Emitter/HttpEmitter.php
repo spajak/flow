@@ -7,7 +7,7 @@ use Psr\Http\Message\ResponseInterface;
 use function Http\Response\send;
 
 /**
- * Emitt response
+ * Emitt response to HTTP
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */

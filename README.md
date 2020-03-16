@@ -24,13 +24,13 @@ $app = new Flow\Application;
 Register services (using: [php-di/php-di](https://github.com/PHP-DI/PHP-DI)):
 
 ```php
-$app->getContainerBuilder()->addDefinitions([
-    'hello' => function() {
-        return new class {
-            public function sayHello($name) { return "Hello {$name}!"; }
-        };
-    }
-]);
+$services = [];
+$services['hello'] = function() {
+    return new class {
+        public function sayHello($name) { return "Hello {$name}!"; }
+    };
+};
+$app->getContainerBuilder()->addDefinitions($services);
 ```
 
 Register routes (using: [nikic/fast-route](https://github.com/nikic/FastRoute)):
@@ -58,21 +58,21 @@ $app->getConsole()->register('hello')
     });
 ```
 
-…or using lazy command factories:
+…or use factories to lazy-load commands:
 
 ```php
 use Flow\Command\RequestCommand;
 use Flow\Emitter\ConsoleEmitter;
 
-$app->setConsoleCommandsLoader([
-    'request' => function() use ($app) {
-        return new RequestCommand(
-            $app->getServerRequestCreator(),
-            $app->getBroker(),
-            new ConsoleEmitter
-        );
-    }
-]);
+$commands = [];
+$commands['request'] = function() use ($app) {
+    return new RequestCommand(
+        $app->getServerRequestCreator(),
+        $app->getBroker(),
+        new ConsoleEmitter
+    );
+}
+$app->setConsoleCommandsLoader($commands);
 ```
 
 At the end of the script, simply run the Application:
@@ -84,8 +84,8 @@ $app->run();
 Try it from terminal:
 
 ```bash
-$ php examples/main.php hello "Grim Reaper"
-$ php examples/main.php request GET /hello
+$ php examples/application.php hello "Grim Reaper"
+$ php examples/application.php request GET /hello
 ```
 
 ## TODO

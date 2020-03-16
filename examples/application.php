@@ -6,13 +6,13 @@ $app = new Flow\Application;
 
 // Register services (using: php-di/php-di)
 // -----------------------------------------------------------------------------
-$app->getContainerBuilder()->addDefinitions([
-    'hello' => function() {
-        return new class {
-            public function sayHello($name) { return "Hello {$name}!"; }
-        };
-    }
-]);
+$services = [];
+$services['hello'] = function() {
+    return new class {
+        public function sayHello($name) { return "Hello {$name}!"; }
+    };
+};
+$app->getContainerBuilder()->addDefinitions($services);
 
 // Register routes (using: nikic/fast-route)
 // -----------------------------------------------------------------------------
@@ -35,18 +35,18 @@ $app->getConsole()->register('hello')
         $output->writeLn($service->sayHello($input->getArgument('name')));
     });
 
-// ...or using lazy command factories:
+// ...or use factories to lazy-load commands:
 use Flow\Command\RequestCommand;
 use Flow\Emitter\ConsoleEmitter;
 
-$app->setConsoleCommandsLoader([
-    'request' => function() use ($app) {
-        return new RequestCommand(
-            $app->getServerRequestCreator(),
-            $app->getBroker(),
-            new ConsoleEmitter
-        );
-    }
-]);
+$commands = [];
+$commands['request'] = function() use ($app) {
+    return new RequestCommand(
+        $app->getServerRequestCreator(),
+        $app->getBroker(),
+        new ConsoleEmitter
+    );
+};
+$app->setConsoleCommandsLoader($commands);
 
 return $app->run();

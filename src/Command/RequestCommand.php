@@ -10,11 +10,17 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Flow\Emitter\ConsoleEmitterInterface;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
 
+/**
+ * Symfony Console command to run requests in terminal.
+ *
+ * @author Sebastian Pająk <spconv@gmail.com>
+ */
 class RequestCommand extends SymfonyCommand
 {
     protected $serverRequestCreator;
     protected $handler;
     protected $emitter;
+    protected static $host = 'console.in';
 
     public function __construct(
         ServerRequestCreatorInterface $serverRequestCreator,
@@ -60,17 +66,17 @@ class RequestCommand extends SymfonyCommand
 
         $server = [
             'SERVER_PROTOCOL' => 'HTTP/1.1',
-            'SERVER_NAME' => 'console.in',
+            'SERVER_NAME' => self::$host,
             'REQUEST_METHOD' => strtoupper($input->getArgument('method')),
             'REQUEST_URI' => $uri,
             'QUERY_STRING' => $query,
             'HTTPS' => null,
-            'HTTP_HOST' => 'console.in',
+            'HTTP_HOST' => self::$host,
             'HTTP_USER_AGENT' => 'Console',
         ];
 
         $headers = [
-            'host' => 'console.in'
+            'host' => self::$host
         ];
         $cookie = [];
         $get = $this->parseQuery($query ?? '');

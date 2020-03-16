@@ -12,6 +12,12 @@ use FastRoute\Dispatcher;
 use Invoker\Invoker;
 use RuntimeException;
 
+/**
+ * Route middleware.
+ *
+ * @author Sebastian Pająk <spconv@gmail.com>
+ * @see https://mwop.net/blog/2018-01-23-psr-15.html
+ */
 class RouterMiddleware implements MiddlewareInterface
 {
     protected $dispatcher;
