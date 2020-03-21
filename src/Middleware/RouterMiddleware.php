@@ -10,6 +10,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use FastRoute\Dispatcher;
 use Invoker\Invoker;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -55,11 +56,17 @@ class RouterMiddleware implements MiddlewareInterface
         return $response;
     }
 
-    private function invokeRouteHandler(RequestInterface $request, array $routeInfo): ResponseInterface
+    public static function invokeRouteHandler(RequestInterface $request, array $routeInfo): ResponseInterface
     {
+        if (!isset($routeInfo[0]) or $routeInfo[0] !== Dispatcher::FOUND) {
+            throw new InvalidArgumentException('Invalid route info. Route must be found');
+        }
+        if (!isset($routeInfo[1]) or !is_callable($routeInfo[1])) {
+            throw new InvalidArgumentException('Route handler not given or invalid');
+        }
         $invoker = new Invoker;
         $handler = $routeInfo[1];
-        $parameters = $routeInfo[2];
+        $parameters = $routeInfo[2] ?? [];
         if (!isset($parameters['request'])) {
             $parameters['request'] = $request;
         }
