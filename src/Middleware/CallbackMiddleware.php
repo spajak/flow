@@ -7,11 +7,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-/**
- * Callback middleware.
- *
- * @author Sebastian Pająk <spconv@gmail.com>
- */
 class CallbackMiddleware implements MiddlewareInterface
 {
     protected $middleware;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Flow;
+namespace Flow\Emitter;
 
 use Psr\Http\Message\ResponseInterface;
 

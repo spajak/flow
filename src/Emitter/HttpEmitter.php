@@ -2,7 +2,6 @@
 
 namespace Flow\Emitter;
 
-use Flow\EmitterInterface;
 use Psr\Http\Message\ResponseInterface;
 use function Http\Response\send;
 

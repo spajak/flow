@@ -54,7 +54,7 @@ final class Application
         // DI Container
         $this->containerBuilder = new ContainerBuilder;
         $this->containerBuilder->useAutowiring(false);
-        $this->containerBuilder->useAnnotations(false);
+        $this->containerBuilder->useAttributes(false);
 
         $this->containerBuilder->addDefinitions([
             'console' => function() { return $this->console; },

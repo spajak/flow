@@ -2,7 +2,6 @@
 
 namespace Flow\Emitter;
 
-use Flow\EmitterInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
