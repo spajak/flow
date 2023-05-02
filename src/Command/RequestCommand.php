@@ -75,9 +75,7 @@ class RequestCommand extends SymfonyCommand
             'HTTP_USER_AGENT' => 'Console',
         ];
 
-        $headers = [
-            'host' => self::$host
-        ];
+        $headers = ['host' => self::$host];
         $cookie = [];
         $get = $this->parseQuery($query ?? '');
         $post = [];

@@ -13,7 +13,7 @@ Simple PHP HTTP application base using:
 
 - Basing on standardized interfaces and well tested components;
 - Not being tied to any specific framework;
-- Being able to make lightweight and customizable apps fast with just PHP's `include`s and anonymous functions;
+- Being able to make lightweight and customizable apps fast with just PHP's `include`s and anonymous functions.
 
 ## Usage
 
@@ -72,10 +72,10 @@ $commands['request'] = function() use ($app) {
         new ConsoleEmitter
     );
 }
-$app->setConsoleCommandsLoader($commands);
+$app->getCommandLoader()->addFactories($commands);
 ```
 
-At the end of the script, simply run the Application:
+At the end of the script, simply run the application:
 
 ```php
 $app->run();
@@ -87,11 +87,6 @@ Try it from terminal:
 $ php examples/application.php hello "Grim Reaper"
 $ php examples/application.php request GET /hello
 ```
-
-## TODO
-
-- Some kind of helper to simplify creation of the responses.
-- Add logging capabilities.
 
 ## License
 

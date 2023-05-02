@@ -6,7 +6,7 @@ use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
 
 /**
- * Emitt response to the console output
+ * Emit response to console output
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */

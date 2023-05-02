@@ -47,6 +47,6 @@ $commands['request'] = function() use ($app) {
         new ConsoleEmitter
     );
 };
-$app->setConsoleCommandsLoader($commands);
+$app->getCommandLoader()->addFactories($commands);
 
 return $app->run();

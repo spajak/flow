@@ -11,8 +11,8 @@ use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
 use FastRoute\RouteParser\Std as StdRouteParser;
 use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
 use Symfony\Component\Console\Application as Console;
-use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
 use Psr\Http\Message\ServerRequestInterface;
+use Flow\Console\CommandLoader\LazyCommandLoader;
 use Flow\Middleware\RouterMiddleware;
 use Flow\Emitter\HttpEmitter;
 use Nyholm\Psr7\Factory\Psr17Factory as HttpFactory;
@@ -30,6 +30,7 @@ final class Application
     private $broker;
     private $routeCollector;
     private $console;
+    private $commandLoader;
     private $httpFactory;
     private $containerBuilder;
     private $container;
@@ -47,6 +48,8 @@ final class Application
 
         // Console
         $this->console = new Console;
+        $this->commandLoader = new LazyCommandLoader;
+        $this->console->setCommandLoader($this->commandLoader);
 
         // Psr7 Factories
         $this->httpFactory = new HttpFactory;
@@ -82,10 +85,9 @@ final class Application
         return $this->console;
     }
 
-    public function setConsoleCommandsLoader(array $commands)
+    public function getCommandLoader(): LazyCommandLoader
     {
-        $loader = new FactoryCommandLoader($commands);
-        $this->console->setCommandLoader($loader);
+        return $this->commandLoader;
     }
 
     public function getHttpFactory(): HttpFactory
