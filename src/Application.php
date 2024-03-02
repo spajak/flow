@@ -11,7 +11,6 @@ use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
 use FastRoute\RouteParser\Std as StdRouteParser;
 use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
 use Symfony\Component\Console\Application as Console;
-use Psr\Http\Message\ServerRequestInterface;
 use Flow\Console\CommandLoader\LazyCommandLoader;
 use Flow\Middleware\RouterMiddleware;
 use Flow\Emitter\HttpEmitter;

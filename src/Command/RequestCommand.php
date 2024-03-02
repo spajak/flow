@@ -41,7 +41,7 @@ class RequestCommand extends SymfonyCommand
             ->addArgument('uri', InputArgument::REQUIRED, 'URI');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $globals = $this->marshalGlobals($input);
         $request = $this->serverRequestCreator->fromArrays(...$globals);
