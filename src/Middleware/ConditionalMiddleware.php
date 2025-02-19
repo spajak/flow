@@ -9,11 +9,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class ConditionalMiddleware implements MiddlewareInterface
 {
-    /** @var MiddlewareInterface */
-    private $middleware;
+    private MiddlewareInterface $middleware;
 
-    /** @var callable */
-    private $condition;
+    private callable $condition;
 
     public function __construct(MiddlewareInterface $middleware, callable $condition)
     {

@@ -17,10 +17,10 @@ use Nyholm\Psr7Server\ServerRequestCreatorInterface;
  */
 class RequestCommand extends SymfonyCommand
 {
-    protected $serverRequestCreator;
-    protected $handler;
-    protected $emitter;
-    protected static $host = 'console.in';
+    protected ServerRequestCreatorInterface $serverRequestCreator;
+    protected RequestHandlerInterface $handler;
+    protected ConsoleEmitterInterface $emitter;
+    protected static string $host = 'console.in';
 
     public function __construct(
         ServerRequestCreatorInterface $serverRequestCreator,
@@ -90,7 +90,7 @@ class RequestCommand extends SymfonyCommand
         $uri = $parts['path'] ?? '/';
         $query = $parts['query'] ?? null;
         if ($query) {
-            $uri .= '?'.$query;
+            $uri .= '?' . $query;
         }
         return [$uri, $query];
     }

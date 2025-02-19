@@ -37,30 +37,34 @@ final class Application
     public function __construct()
     {
         // Broker (Handler & Middleware)
-        $this->broker = new Broker;
+        $this->broker = new Broker();
 
         // Route Collector
         $this->routeCollector = new RouteCollector(
-            new StdRouteParser,
-            new GroupCountBasedGenerator
+            new StdRouteParser(),
+            new GroupCountBasedGenerator()
         );
 
         // Console
-        $this->console = new Console;
-        $this->commandLoader = new LazyCommandLoader;
+        $this->console = new Console();
+        $this->commandLoader = new LazyCommandLoader();
         $this->console->setCommandLoader($this->commandLoader);
 
         // Psr7 Factories
-        $this->httpFactory = new HttpFactory;
+        $this->httpFactory = new HttpFactory();
 
         // DI Container
-        $this->containerBuilder = new ContainerBuilder;
+        $this->containerBuilder = new ContainerBuilder();
         $this->containerBuilder->useAutowiring(false);
         $this->containerBuilder->useAttributes(false);
 
         $this->containerBuilder->addDefinitions([
-            'console' => function() { return $this->console; },
-            'http_factory' => function() { return $this->httpFactory; }
+            'console' => function () {
+                return $this->console;
+            },
+            'http_factory' => function () {
+                return $this->httpFactory;
+            }
         ]);
     }
 
@@ -97,18 +101,19 @@ final class Application
     public function getContainer(): ContainerInterface
     {
         if (!isset($this->container)) {
-            return new Container;
+            return new Container();
         }
+
         return $this->container;
     }
 
     public function getServerRequestCreator(): ServerRequestCreatorInterface
     {
         return new ServerRequestCreator(
-            $this->httpFactory, // ServerRequestFactory
-            $this->httpFactory, // UriFactory
-            $this->httpFactory, // UploadedFileFactory
-            $this->httpFactory  // StreamFactory
+            serverRequestFactory: $this->httpFactory,
+            uriFactory: $this->httpFactory,
+            uploadedFileFactory: $this->httpFactory,
+            streamFactory: $this->httpFactory
         );
     }
 
@@ -121,7 +126,7 @@ final class Application
         } else {
             $request = $this->getServerRequestCreator()->fromGlobals();
             $response = $this->broker->handle($request);
-            (new HttpEmitter)->emit($response);
+            (new HttpEmitter())->emit($response);
         }
     }
 

@@ -9,7 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class CallbackMiddleware implements MiddlewareInterface
 {
-    protected $middleware;
+    protected callable $middleware;
 
     public function __construct(callable $middleware)
     {

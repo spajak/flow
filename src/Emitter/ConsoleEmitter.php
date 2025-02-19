@@ -12,11 +12,11 @@ use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
  */
 class ConsoleEmitter implements ConsoleEmitterInterface
 {
-    protected $output;
+    protected OutputInterface $output;
 
     public function __construct(OutputInterface $output = null)
     {
-        $this->output = $output ?? new ConsoleOutput;
+        $this->output = $output ?? new ConsoleOutput();
     }
 
     public function setConsoleOutput(OutputInterface $output): void
@@ -45,13 +45,13 @@ class ConsoleEmitter implements ConsoleEmitterInterface
     {
         foreach ($response->getHeaders() as $name => $values) {
             foreach ($values as $value) {
-                $this->output->writeln(sprintf('%s: %s', $name, $value));
+                $this->output->writeln(sprintf('<fg=yellow>%s: %s</>', $name, $value));
             }
         }
     }
 
     private function emitBody(ResponseInterface $response): void
     {
-        $this->output->write("\n".$response->getBody()."\n");
+        $this->output->write("\n" . $response->getBody() . "\n");
     }
 }

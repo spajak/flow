@@ -20,8 +20,8 @@ use RuntimeException;
  */
 class RouterMiddleware implements MiddlewareInterface
 {
-    protected $dispatcher;
-    protected $responseFactory;
+    protected Dispatcher $dispatcher;
+    protected ResponseFactoryInterface $responseFactory;
 
     public function __construct(Dispatcher $dispatcher, ResponseFactoryInterface $responseFactory)
     {
@@ -62,6 +62,7 @@ class RouterMiddleware implements MiddlewareInterface
         if (!isset($parameters['request'])) {
             $parameters['request'] = $request;
         }
-        return (new Invoker)->call($handler, $parameters);
+
+        return (new Invoker())->call($handler, $parameters);
     }
 }
