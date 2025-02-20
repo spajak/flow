@@ -15,7 +15,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 final class RequestCommandTest extends MockeryTestCase
 {
-    public function testCommandExecute()
+    public function testExecute()
     {
         $now = time();
         $date = gmdate('D, d M Y H:i:s T', $now);
