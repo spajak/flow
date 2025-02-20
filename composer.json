@@ -9,7 +9,14 @@
         "email": "spconv@gmail.com"
     }],
     "autoload": {
-        "psr-4": {"Flow\\": "src/"}
+        "psr-4": {
+            "Flow\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "require": {
         "php": ">=8.2",
@@ -20,5 +27,9 @@
         "nikic/fast-route": "^1.3",
         "php-di/php-di": "^7.0",
         "php-di/invoker": "^2.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "mockery/mockery": "^1.6"
     }
 }

@@ -17,10 +17,12 @@ use Nyholm\Psr7Server\ServerRequestCreatorInterface;
  */
 class RequestCommand extends SymfonyCommand
 {
+    protected const HOST = 'console.in';
+    protected const SERVER = 'Flow';
     protected ServerRequestCreatorInterface $serverRequestCreator;
     protected RequestHandlerInterface $handler;
     protected ConsoleEmitterInterface $emitter;
-    protected static string $host = 'console.in';
+    protected ?int $now = null;
 
     public function __construct(
         ServerRequestCreatorInterface $serverRequestCreator,
@@ -49,15 +51,25 @@ class RequestCommand extends SymfonyCommand
 
         $this->emitter->setConsoleOutput($output);
         $this->emitter->emit(
-            $response->withHeader('date', $this->getResponseDate())
+            $response
+                ->withHeader('date', $this->getResponseDate())
+                ->withHeader('server', self::SERVER)
         );
 
         return 0;
     }
 
-    public function getResponseDate()
+    public function setResponseTime(int $now): void
     {
-        return gmdate('D, d M Y H:i:s T');
+        $this->now = $now;
+    }
+
+    /**
+     * Return the current date in RFC2616 format as HTTP response date.
+     */
+    protected function getResponseDate(): string
+    {
+        return gmdate('D, d M Y H:i:s T', $this->now);
     }
 
     protected function marshalGlobals(InputInterface $input): array
@@ -66,16 +78,16 @@ class RequestCommand extends SymfonyCommand
 
         $server = [
             'SERVER_PROTOCOL' => 'HTTP/1.1',
-            'SERVER_NAME' => self::$host,
+            'SERVER_NAME' => self::HOST,
             'REQUEST_METHOD' => strtoupper($input->getArgument('method')),
             'REQUEST_URI' => $uri,
             'QUERY_STRING' => $query,
             'HTTPS' => null,
-            'HTTP_HOST' => self::$host,
+            'HTTP_HOST' => self::HOST,
             'HTTP_USER_AGENT' => 'Console',
         ];
 
-        $headers = ['host' => self::$host];
+        $headers = ['host' => self::HOST];
         $cookie = [];
         $get = $this->parseQuery($query ?? '');
         $post = [];
