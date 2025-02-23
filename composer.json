@@ -1,7 +1,6 @@
 {
     "name": "spajak/flow",
     "description": "Simple PHP application base",
-    "version": "0.8.2",
     "type": "library",
     "license": "MIT",
     "authors": [{
