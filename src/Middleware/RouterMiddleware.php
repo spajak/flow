@@ -41,9 +41,19 @@ class RouterMiddleware implements MiddlewareInterface
                 $response = $this->responseFactory->createResponse(404);
                 break;
             case Dispatcher::METHOD_NOT_ALLOWED:
-                $response = $this->responseFactory
-                    ->createResponse(405)
-                    ->withHeader('allow', implode(', ', $routeInfo[1]));
+                $allowedMethods = implode(', ', $routeInfo[1]);
+                if ($request->getMethod() === 'OPTIONS') {
+                    $response = $this->responseFactory
+                        ->createResponse(200)
+                        ->withHeader('access-control-allow-origin', '*')
+                        ->withHeader('access-control-allow-methods', $allowedMethods)
+                        ->withHeader('access-control-allow-headers', '*')
+                        ->withHeader('access-control-allow-credentials', 'true');
+                } else {
+                    $response = $this->responseFactory
+                        ->createResponse(405)
+                        ->withHeader('allow', $allowedMethods);
+                }
                 break;
             case Dispatcher::FOUND:
                 $response = $this->invokeRouteHandler($request, $routeInfo);
