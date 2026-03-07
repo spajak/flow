@@ -14,7 +14,7 @@ class ConsoleEmitter implements ConsoleEmitterInterface
 {
     protected OutputInterface $output;
 
-    public function __construct(OutputInterface $output = null)
+    public function __construct(?OutputInterface $output = null)
     {
         $this->output = $output ?? new ConsoleOutput();
     }

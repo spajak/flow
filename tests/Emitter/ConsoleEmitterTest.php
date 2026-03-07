@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 final class ConsoleEmitterTest extends MockeryTestCase
 {
-    public function testEmit()
+    public function testEmit(): void
     {
         $output = new BufferedOutput();
         $emitter = new ConsoleEmitter();

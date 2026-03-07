@@ -10,7 +10,7 @@ use Psr\Http\Message\StreamInterface;
 
 final class HttpEmitterTest extends MockeryTestCase
 {
-    public function testEmit()
+    public function testEmit(): void
     {
         $emitter = new HttpEmitter();
 

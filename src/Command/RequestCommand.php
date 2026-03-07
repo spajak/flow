@@ -35,7 +35,7 @@ class RequestCommand extends SymfonyCommand
         $this->emitter = $emitter;
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('request')
             ->setDescription('Fire request in console')

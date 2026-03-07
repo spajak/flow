@@ -8,14 +8,17 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Flow\Emitter\ConsoleEmitterInterface;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 final class RequestCommandTest extends MockeryTestCase
 {
-    public function testExecute()
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecute(): void
     {
         $now = time();
         $date = gmdate('D, d M Y H:i:s T', $now);
@@ -34,7 +37,7 @@ final class RequestCommandTest extends MockeryTestCase
         $serverRequestCreator = $this->createMock(ServerRequestCreatorInterface::class);
         $serverRequestCreator->method('fromArrays')->willReturn($serverRequest);
         $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->method('handle')->with($serverRequest)->willReturn($response);
+        $handler->expects($this->once())->method('handle')->with($serverRequest)->willReturn($response);
 
         $emitter = Mockery::mock(ConsoleEmitterInterface::class);
         $emitter->shouldReceive('setConsoleOutput')->once()->with($output);
@@ -44,11 +47,18 @@ final class RequestCommandTest extends MockeryTestCase
         $requestCommand = new RequestCommand($serverRequestCreator, $handler, $emitter);
         $requestCommand->setResponseTime($now);
 
-        $executeMethod = function ($input, $output) {
-            /** @disregard P1013 Undefined method */
-            return $this->execute($input, $output);
-        };
-        $result = $executeMethod->call($requestCommand, $input, $output);
+        /** @var \Closure(InputInterface, OutputInterface): int $executeMethod */
+        $executeMethod = \Closure::bind(
+            function ($input, $output) {
+                /** @disregard P1013 Undefined method */
+                return $this->execute($input, $output);
+            },
+            $requestCommand,
+            $requestCommand::class
+        );
+
+        $result = $executeMethod($input, $output);
+
         $content = $output->fetch();
 
         $this->assertEquals(0, $result);

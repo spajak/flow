@@ -11,7 +11,7 @@ class ConditionalMiddleware implements MiddlewareInterface
 {
     private MiddlewareInterface $middleware;
 
-    private callable $condition;
+    private $condition;
 
     public function __construct(MiddlewareInterface $middleware, callable $condition)
     {
