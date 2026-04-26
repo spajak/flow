@@ -25,7 +25,9 @@ final class ConsoleEmitterTest extends MockeryTestCase
             'date' => ['Thu, 20 Feb 2025 11:50:09 GMT']
         ]);
         $stream = Mockery::mock(StreamInterface::class);
-        $stream->shouldReceive('__toString')->andReturn('Foo');
+        $stream->shouldReceive('isSeekable')->andReturn(true);
+        $stream->shouldReceive('rewind')->once();
+        $stream->shouldReceive('getContents')->once()->andReturn('Foo');
         $response->shouldReceive('getBody')->andReturn($stream);
 
         /** @disregard P1006 Expected type */
@@ -34,13 +36,37 @@ final class ConsoleEmitterTest extends MockeryTestCase
         $result = $output->fetch();
 
         $expected = <<<EOF
-        HTTP/1.1 200 OK\r
-        date: Thu, 20 Feb 2025 11:50:09 GMT\r
+        HTTP/1.1 200 OK
+        date: Thu, 20 Feb 2025 11:50:09 GMT
 
         Foo
 
         EOF;
 
         $this->assertEquals($expected, $result);
+    }
+
+    public function testEmitDoesNotRewindNonSeekableStream(): void
+    {
+        $output = new BufferedOutput();
+        $emitter = new ConsoleEmitter();
+        $emitter->setConsoleOutput($output);
+
+        $response = Mockery::mock(ResponseInterface::class);
+        $response->shouldReceive('getProtocolVersion')->andReturn('1.1');
+        $response->shouldReceive('getStatusCode')->andReturn(200);
+        $response->shouldReceive('getReasonPhrase')->andReturn('OK');
+        $response->shouldReceive('getHeaders')->andReturn([]);
+
+        $stream = Mockery::mock(StreamInterface::class);
+        $stream->shouldReceive('isSeekable')->andReturn(false);
+        $stream->shouldNotReceive('rewind');
+        $stream->shouldReceive('getContents')->once()->andReturn('Bar');
+        $response->shouldReceive('getBody')->andReturn($stream);
+
+        /** @disregard P1006 Expected type */
+        $emitter->emit($response);
+
+        $this->assertStringContainsString('Bar', $output->fetch());
     }
 }

@@ -1,7 +1,6 @@
-
 # Flow
 
-Simple PHP HTTP application base using:
+Simple PHP HTTP & CLI application base using:
 
 - PSR-7 HTTP Message / PSR-17 HTTP Factories: [nyholm/psr7](https://github.com/Nyholm/psr7)
 - PSR-15 HTTP Handlers / Middleware: [northwoods/broker](https://github.com/northwoods/broker)
@@ -86,6 +85,20 @@ Try it from terminal:
 ```bash
 $ php examples/application.php hello "Grim Reaper"
 $ php examples/application.php request GET /hello
+```
+
+## Lifecycle
+
+Append all middleware to the broker *before* calling `$app->run()`. The router
+middleware is appended last during bootstrap and terminates the pipeline on a
+matched route, so anything appended afterwards is unreachable for matched
+routes.
+
+## Tests & static analysis
+
+```bash
+$ composer test       # phpunit
+$ composer analyse    # phpstan
 ```
 
 ## License

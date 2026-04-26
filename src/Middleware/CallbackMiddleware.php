@@ -2,22 +2,24 @@
 
 namespace Flow\Middleware;
 
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
-class CallbackMiddleware implements MiddlewareInterface
+use Closure;
+
+final class CallbackMiddleware implements MiddlewareInterface
 {
-    protected $middleware;
+    private readonly Closure $middleware;
 
     public function __construct(callable $middleware)
     {
-        $this->middleware = $middleware;
+        $this->middleware = $middleware(...);
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        return call_user_func($this->middleware, $request, $handler);
+        return ($this->middleware)($request, $handler);
     }
 }

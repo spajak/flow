@@ -7,16 +7,17 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-class ConditionalMiddleware implements MiddlewareInterface
+use Closure;
+
+final class ConditionalMiddleware implements MiddlewareInterface
 {
-    private MiddlewareInterface $middleware;
+    private readonly Closure $condition;
 
-    private $condition;
-
-    public function __construct(MiddlewareInterface $middleware, callable $condition)
-    {
-        $this->middleware = $middleware;
-        $this->condition = $condition;
+    public function __construct(
+        private readonly MiddlewareInterface $middleware,
+        callable $condition,
+    ) {
+        $this->condition = $condition(...);
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

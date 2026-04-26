@@ -3,16 +3,17 @@
 namespace Flow\Emitter;
 
 use Psr\Http\Message\ResponseInterface;
-use Symfony\Component\Console\Output\{OutputInterface, ConsoleOutput};
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Emit response to console output
+ * Emit response to console output.
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */
-class ConsoleEmitter implements ConsoleEmitterInterface
+final class ConsoleEmitter implements ConsoleEmitterInterface
 {
-    protected OutputInterface $output;
+    private OutputInterface $output;
 
     public function __construct(?OutputInterface $output = null)
     {
@@ -52,6 +53,10 @@ class ConsoleEmitter implements ConsoleEmitterInterface
 
     private function emitBody(ResponseInterface $response): void
     {
-        $this->output->write("\n" . $response->getBody() . "\n");
+        $stream = $response->getBody();
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
+        $this->output->write("\n" . $stream->getContents() . "\n");
     }
 }

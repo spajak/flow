@@ -10,7 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 interface EmitterInterface
 {
     /**
-     * Emit (write) reponse to an output.
+     * Emit (write) response to an output.
      */
-    public function emit(ResponseInterface $reponse): void;
+    public function emit(ResponseInterface $response): void;
 }

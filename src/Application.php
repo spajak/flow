@@ -2,40 +2,54 @@
 
 namespace Flow;
 
-use DI\ContainerBuilder;
-use DI\Container;
-use Psr\Container\ContainerInterface;
-use Northwoods\Broker\Broker;
-use FastRoute\RouteCollector;
-use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
-use FastRoute\RouteParser\Std as StdRouteParser;
-use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
-use Symfony\Component\Console\Application as Console;
 use Flow\Console\CommandLoader\LazyCommandLoader;
-use Flow\Middleware\RouterMiddleware;
 use Flow\Emitter\HttpEmitter;
+use Flow\Middleware\RouterMiddleware;
+
+use DI\Container;
+use DI\ContainerBuilder;
+use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
+use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
+use FastRoute\RouteCollector;
+use FastRoute\RouteParser\Std as StdRouteParser;
+use Northwoods\Broker\Broker;
 use Nyholm\Psr7\Factory\Psr17Factory as HttpFactory;
-use Nyholm\Psr7Server\ServerRequestCreatorInterface;
 use Nyholm\Psr7Server\ServerRequestCreator;
+use Nyholm\Psr7Server\ServerRequestCreatorInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Application as Console;
+
+use LogicException;
 
 /**
  * Main application class.
+ *
+ * Lifecycle: register middleware on the broker, routes on the route collector,
+ * services on the container builder, and commands on the console — all BEFORE
+ * calling `run()`. The router middleware is appended last during bootstrap and
+ * terminates the pipeline on a matched route, so anything appended after
+ * `run()` is unreachable for matched routes.
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */
 final class Application
 {
-    private $bootstrapped;
-    private $broker;
-    private $routeCollector;
-    private $console;
-    private $commandLoader;
-    private $httpFactory;
-    private $containerBuilder;
-    private $container;
+    private bool $bootstrapped = false;
+    private readonly Broker $broker;
+    private readonly RouteCollector $routeCollector;
+    private readonly Console $console;
+    private readonly LazyCommandLoader $commandLoader;
+    private readonly HttpFactory $httpFactory;
+    /** @var ContainerBuilder<Container> */
+    private readonly ContainerBuilder $containerBuilder;
+    private ?Container $container = null;
+    private readonly ?LoggerInterface $logger;
 
-    public function __construct()
+    public function __construct(?LoggerInterface $logger = null)
     {
+        $this->logger = $logger;
+
         // Broker (Handler & Middleware)
         $this->broker = new Broker();
 
@@ -59,15 +73,14 @@ final class Application
         $this->containerBuilder->useAttributes(false);
 
         $this->containerBuilder->addDefinitions([
-            'console' => function () {
-                return $this->console;
-            },
-            'http_factory' => function () {
-                return $this->httpFactory;
-            }
+            'console' => fn (): Console => $this->console,
+            'http_factory' => fn (): HttpFactory => $this->httpFactory,
         ]);
     }
 
+    /**
+     * @return ContainerBuilder<Container>
+     */
     public function getContainerBuilder(): ContainerBuilder
     {
         return $this->containerBuilder;
@@ -100,11 +113,13 @@ final class Application
 
     public function getContainer(): ContainerInterface
     {
-        if (!isset($this->container)) {
-            return new Container();
+        if (!$this->bootstrapped) {
+            throw new LogicException('Container is not available before bootstrap.');
         }
 
-        return $this->container;
+        /** @var Container $container — narrowed by $bootstrapped */
+        $container = $this->container;
+        return $container;
     }
 
     public function getServerRequestCreator(): ServerRequestCreatorInterface
@@ -139,7 +154,7 @@ final class Application
         $this->container = $this->containerBuilder->build();
 
         $dispatcher = new RouteDispatcher($this->routeCollector->getData());
-        $router = new RouterMiddleware($dispatcher, $this->httpFactory);
+        $router = new RouterMiddleware($dispatcher, $this->httpFactory, $this->logger);
         $this->broker->append($router);
 
         $this->bootstrapped = true;
