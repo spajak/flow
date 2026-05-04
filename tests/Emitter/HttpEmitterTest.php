@@ -64,9 +64,12 @@ final class HttpEmitterTest extends MockeryTestCase
         $output = ob_get_clean();
 
         $this->assertEquals('Hello world', $output);
-        // We can't introspect headers in CLI tests, but Mockery verifies the
-        // happy path: hasHeader was queried, getSize was queried, no error.
-        $this->addToAssertionCount(1);
+        // Headers can't be introspected from PHP CLI (`headers_list()` returns
+        // empty under phpunit), so Content-Length itself isn't asserted here.
+        // The contract being locked is the stream-handling path: rewind() is
+        // required (Mockery `->once()`), getSize() is queried (Mockery), and
+        // no exception is raised. If the seekable/sized branch ever stops
+        // calling rewind(), Mockery fails the test at teardown.
     }
 
     public function testEmitDoesNotOverrideExistingContentLength(): void

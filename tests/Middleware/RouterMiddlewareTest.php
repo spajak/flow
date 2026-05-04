@@ -200,10 +200,10 @@ final class RouterMiddlewareTest extends MockeryTestCase
 
     public function testRouteParameterNamedRequestIsNotOverridden(): void
     {
-        // Implementation note: invokeRouteHandler only injects $request when
-        // it is not already in the parameter map. A route param literally
-        // named "request" therefore wins over the ServerRequest. Documents
-        // current behaviour.
+        // The FOUND branch only injects the ServerRequest under the "request"
+        // key when it is not already present in the parameter map. So a route
+        // param literally named "request" wins over the ServerRequest.
+        // Documents current behaviour.
         $captured = null;
         $handler = function ($request) use (&$captured): ResponseInterface {
             $captured = $request;
@@ -249,8 +249,13 @@ final class RouterMiddlewareTest extends MockeryTestCase
         $middleware->process($request, Mockery::mock(RequestHandlerInterface::class));
     }
 
-    public function testFoundCatchesHandlerExceptionAndReturns500(): void
+    public function testFoundLetsHandlerExceptionsPropagate(): void
     {
+        // Routing and error handling are separate concerns. The router
+        // dispatches; if the handler throws, the exception propagates up to
+        // the application's error-handling middleware (or PHP's global
+        // exception handler if none is installed). The router does not
+        // fabricate a 500 response or log on its own.
         $handler = function (): ResponseInterface {
             throw new RuntimeException('boom');
         };
@@ -262,16 +267,68 @@ final class RouterMiddlewareTest extends MockeryTestCase
         $request = $this->factory->createServerRequest('GET', '/explodes');
         $middleware = new RouterMiddleware($dispatcher, $this->factory);
 
-        // error_log writes to stderr — silence it for this test so the phpunit
-        // output stays clean.
-        $previous = ini_set('error_log', '/dev/null');
-        try {
-            $response = $middleware->process($request, Mockery::mock(RequestHandlerInterface::class));
-        } finally {
-            ini_set('error_log', (string) $previous);
-        }
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('boom');
 
-        $this->assertSame(500, $response->getStatusCode());
+        $middleware->process($request, Mockery::mock(RequestHandlerInterface::class));
+    }
+
+    public function testFoundWithMultipleRouteParameters(): void
+    {
+        // Locks multi-parameter injection. Existing FOUND tests only proved
+        // the single-parameter case; a regression in php-di's Invoker
+        // signature-matching for two-or-more route params would slip through.
+        $captured = [];
+        $handler = function (string $a, string $b, ServerRequestInterface $request) use (&$captured): ResponseInterface {
+            $captured = ['a' => $a, 'b' => $b, 'method' => $request->getMethod()];
+            return (new Psr17Factory())->createResponse(200);
+        };
+
+        $dispatcher = Mockery::mock(Dispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->andReturn([Dispatcher::FOUND, $handler, ['a' => '1', 'b' => '2']]);
+
+        $request = $this->factory->createServerRequest('GET', '/items/1/2');
+        $middleware = new RouterMiddleware($dispatcher, $this->factory);
+        $response = $middleware->process($request, Mockery::mock(RequestHandlerInterface::class));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('1', $captured['a']);
+        $this->assertSame('2', $captured['b']);
+        $this->assertSame('GET', $captured['method']);
+    }
+
+    public function testOptionsOnFoundRouteBypassesCorsLogic(): void
+    {
+        // When OPTIONS is registered as an explicit route, the FOUND branch
+        // runs the handler and returns its response unchanged. The CORS
+        // preflight machinery in methodNotAllowed() is NOT invoked, so
+        // Access-Control-Allow-* headers are absent unless the handler sets
+        // them itself. Documents and locks this behaviour against accidental
+        // "fixes" that would conflate the two paths.
+        $handler = fn (): ResponseInterface => $this->factory
+            ->createResponse(200)
+            ->withHeader('x-handled', 'yes');
+
+        $dispatcher = Mockery::mock(Dispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->with('OPTIONS', '/items')
+            ->andReturn([Dispatcher::FOUND, $handler, []]);
+
+        $request = $this->factory->createServerRequest('OPTIONS', '/items')
+            ->withHeader('Origin', 'https://wcn.pl');
+        $middleware = new RouterMiddleware($dispatcher, $this->factory);
+        $response = $middleware->process($request, Mockery::mock(RequestHandlerInterface::class));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('yes', $response->getHeaderLine('x-handled'));
+        // No CORS headers from methodNotAllowed leaked through.
+        $this->assertFalse($response->hasHeader('access-control-allow-methods'));
+        $this->assertFalse($response->hasHeader('access-control-allow-headers'));
+        $this->assertFalse($response->hasHeader('access-control-allow-origin'));
+        $this->assertFalse($response->hasHeader('access-control-allow-credentials'));
+        $this->assertFalse($response->hasHeader('vary'));
+        $this->assertFalse($response->hasHeader('allow'));
     }
 
     public function testHandlerCanBeAnInvokableObject(): void

@@ -160,6 +160,39 @@ final class ApplicationTest extends MockeryTestCase
         $this->assertSame(418, $response->getStatusCode());
     }
 
+    public function testUserMiddlewareCanModifyResponseAfterRouterRuns(): void
+    {
+        $app = new Application();
+        $factory = $app->getHttpFactory();
+
+        $app->getRouteCollector()->addRoute('GET', '/ping', function () use ($factory) {
+            $response = $factory->createResponse(200);
+            $response->getBody()->write('pong');
+            return $response;
+        });
+
+        $app->getBroker()->append(new class implements \Psr\Http\Server\MiddlewareInterface {
+            public function process(
+                \Psr\Http\Message\ServerRequestInterface $request,
+                \Psr\Http\Server\RequestHandlerInterface $handler,
+            ): \Psr\Http\Message\ResponseInterface {
+                return $handler->handle($request)
+                    ->withAddedHeader('Vary', 'Accept-Version')
+                    ->withHeader('X-API-Version', '1');
+            }
+        });
+
+        $this->bootstrap($app);
+
+        $request = $factory->createServerRequest('GET', '/ping');
+        $response = $app->getBroker()->handle($request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('pong', (string) $response->getBody());
+        $this->assertSame(['1'], $response->getHeader('X-API-Version'));
+        $this->assertContains('Accept-Version', $response->getHeader('Vary'));
+    }
+
     private function bootstrap(Application $app): void
     {
         (new ReflectionClass($app))->getMethod('bootstrap')->invoke($app);

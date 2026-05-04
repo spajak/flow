@@ -10,10 +10,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Psr\Log\LoggerInterface;
 
 use RuntimeException;
-use Throwable;
 
 /**
  * Route middleware. Terminal handler for matched routes.
@@ -28,7 +26,6 @@ final class RouterMiddleware implements MiddlewareInterface
     public function __construct(
         private readonly Dispatcher $dispatcher,
         private readonly ResponseFactoryInterface $responseFactory,
-        private readonly ?LoggerInterface $logger = null,
     ) {
         $this->invoker = new Invoker();
     }
@@ -52,7 +49,12 @@ final class RouterMiddleware implements MiddlewareInterface
                 $parameters = $routeInfo[2] ?? [];
                 /** @var mixed $handler */
                 $handler = $routeInfo[1];
-                return $this->invokeRouteHandler($request, $handler, $parameters);
+
+                if (!isset($parameters['request'])) {
+                    $parameters['request'] = $request;
+                }
+                /** @var ResponseInterface */
+                return $this->invoker->call($handler, $parameters);
 
             default:
                 throw new RuntimeException('Unknown dispatch result');
@@ -91,43 +93,5 @@ final class RouterMiddleware implements MiddlewareInterface
         }
 
         return $response->withHeader('access-control-allow-origin', '*');
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    private function invokeRouteHandler(
-        ServerRequestInterface $request,
-        mixed $handler,
-        array $parameters,
-    ): ResponseInterface {
-        if (!isset($parameters['request'])) {
-            $parameters['request'] = $request;
-        }
-
-        try {
-            /** @var ResponseInterface $response */
-            $response = $this->invoker->call($handler, $parameters);
-            return $response;
-        } catch (Throwable $e) {
-            $this->logException($e);
-            return $this->responseFactory->createResponse(500);
-        }
-    }
-
-    private function logException(Throwable $e): void
-    {
-        if ($this->logger !== null) {
-            $this->logger->error($e->getMessage(), ['exception' => $e]);
-            return;
-        }
-
-        error_log(sprintf(
-            '[%s] %s in %s:%d',
-            $e::class,
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine()
-        ));
     }
 }

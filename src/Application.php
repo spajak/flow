@@ -17,7 +17,6 @@ use Nyholm\Psr7\Factory\Psr17Factory as HttpFactory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Application as Console;
 
 use LogicException;
@@ -44,12 +43,9 @@ final class Application
     /** @var ContainerBuilder<Container> */
     private readonly ContainerBuilder $containerBuilder;
     private ?Container $container = null;
-    private readonly ?LoggerInterface $logger;
 
-    public function __construct(?LoggerInterface $logger = null)
+    public function __construct()
     {
-        $this->logger = $logger;
-
         // Broker (Handler & Middleware)
         $this->broker = new Broker();
 
@@ -154,7 +150,7 @@ final class Application
         $this->container = $this->containerBuilder->build();
 
         $dispatcher = new RouteDispatcher($this->routeCollector->getData());
-        $router = new RouterMiddleware($dispatcher, $this->httpFactory, $this->logger);
+        $router = new RouterMiddleware($dispatcher, $this->httpFactory);
         $this->broker->append($router);
 
         $this->bootstrapped = true;

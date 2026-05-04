@@ -27,12 +27,16 @@ $app->getRouteCollector()->get('/hello[/{name}]', function ($request, $name = 'W
 
 // Register console commands (using: symfony/console)
 // -----------------------------------------------------------------------------
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
 $app->getConsole()->register('hello')
     ->setDescription('Say hello')
     ->addArgument('name', null, 'Your name', 'World')
-    ->setCode(function ($input, $output) use ($app) {
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($app) {
         $service = $app->getContainer()->get('hello');
         $output->writeLn($service->sayHello($input->getArgument('name')));
+        return 0;
     });
 
 // ...or use factories to lazy-load commands:

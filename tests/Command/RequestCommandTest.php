@@ -6,8 +6,8 @@ use Flow\Command\RequestCommand;
 use Flow\Emitter\ConsoleEmitterInterface;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -16,7 +16,6 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 final class RequestCommandTest extends MockeryTestCase
 {
-    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturns0ForSuccessResponse(): void
     {
         $command = $this->buildCommand($responseStatus = 200);
@@ -27,7 +26,6 @@ final class RequestCommandTest extends MockeryTestCase
         $this->assertSame(0, $exit);
     }
 
-    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturns1For4xx(): void
     {
         $command = $this->buildCommand(404);
@@ -38,7 +36,6 @@ final class RequestCommandTest extends MockeryTestCase
         $this->assertSame(1, $exit);
     }
 
-    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturns2For5xx(): void
     {
         $command = $this->buildCommand(503);
@@ -98,6 +95,58 @@ final class RequestCommandTest extends MockeryTestCase
         $this->assertNull($query);
     }
 
+    public function testParseUrlReturnsFallbackForMalformedUrl(): void
+    {
+        // parse_url returns false for inputs like "http://:80" (port without
+        // host). The fallback path returns ['/', null] so the command can
+        // still proceed and the request creator gets sane defaults.
+        $command = $this->buildCommand(200);
+
+        $reflection = new \ReflectionMethod($command, 'parseUrl');
+        [$uri, $query] = $reflection->invoke($command, 'http://:80');
+
+        $this->assertSame('/', $uri);
+        $this->assertNull($query);
+    }
+
+    public function testExecuteEmitsResponseWithDateAndServerHeaders(): void
+    {
+        // Locks the header-decoration logic in execute(): the response that
+        // reaches the emitter MUST carry a `date` header (RFC 2616 format)
+        // and a `server: Flow` header. Without this test the decoration is
+        // invisible — buildCommand's lenient mocks would let breakage slide.
+        $factory = new Psr17Factory();
+        $serverRequest = $factory->createServerRequest('GET', '/');
+        $response = $factory->createResponse(200);
+
+        $serverRequestCreator = $this->createStub(ServerRequestCreatorInterface::class);
+        $serverRequestCreator->method('fromArrays')->willReturn($serverRequest);
+
+        $handler = $this->createStub(RequestHandlerInterface::class);
+        $handler->method('handle')->willReturn($response);
+
+        $captured = null;
+        $emitter = Mockery::mock(ConsoleEmitterInterface::class);
+        $emitter->shouldReceive('setConsoleOutput')->once();
+        $emitter->shouldReceive('emit')
+            ->once()
+            ->with(Mockery::on(function (ResponseInterface $r) use (&$captured): bool {
+                $captured = $r;
+                return true;
+            }));
+
+        /** @disregard P1006 Expected type */
+        $command = new RequestCommand($serverRequestCreator, $handler, $emitter);
+        $command->setResponseTime($fixed = 1_700_000_000);
+
+        $tester = new CommandTester($command);
+        $tester->execute(['method' => 'GET', 'uri' => '/']);
+
+        $this->assertNotNull($captured);
+        $this->assertSame(gmdate('D, d M Y H:i:s T', $fixed), $captured->getHeaderLine('date'));
+        $this->assertSame('Flow', $captured->getHeaderLine('server'));
+    }
+
     public function testMarshalGlobalsBuildsCanonicalServerArray(): void
     {
         $command = $this->buildCommand(200);
@@ -136,6 +185,10 @@ final class RequestCommandTest extends MockeryTestCase
         $handler = $this->createStub(RequestHandlerInterface::class);
         $handler->method('handle')->willReturn($response);
 
+        // Permissive: reflection-only tests (parseUrl, getResponseDate, etc.)
+        // share this builder and never call execute(), so emit/setConsoleOutput
+        // may legitimately be invoked zero times. testExecuteEmitsResponseWith
+        // DateAndServerHeaders has its own strict setup for verifying emit().
         $emitter = Mockery::mock(ConsoleEmitterInterface::class);
         $emitter->shouldReceive('setConsoleOutput')->andReturnNull();
         $emitter->shouldReceive('emit')->andReturnNull();
