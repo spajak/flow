@@ -56,6 +56,7 @@ final class HttpEmitter implements EmitterInterface
 
         while (!$stream->eof()) {
             echo $stream->read(1024 * 8);
+            flush();
         }
 
         // Free the FastCGI worker so post-response work (logging, async tasks,

@@ -61,55 +61,6 @@ final class RouterMiddlewareTest extends MockeryTestCase
         $this->assertSame('GET, PUT', $response->getHeaderLine('allow'));
     }
 
-    public function testOptionsWithOriginReflectsItAndAllowsCredentials(): void
-    {
-        $dispatcher = Mockery::mock(Dispatcher::class);
-        $dispatcher->shouldReceive('dispatch')
-            ->with('OPTIONS', '/items')
-            ->andReturn([Dispatcher::METHOD_NOT_ALLOWED, ['GET', 'POST']]);
-
-        $request = $this->factory->createServerRequest('OPTIONS', '/items')
-            ->withHeader('Origin', 'https://wcn.pl');
-        $next = Mockery::mock(RequestHandlerInterface::class);
-        $next->shouldNotReceive('handle');
-
-        $middleware = new RouterMiddleware($dispatcher, $this->factory);
-        $response = $middleware->process($request, $next);
-
-        $this->assertSame(204, $response->getStatusCode());
-        $this->assertSame('GET, POST', $response->getHeaderLine('allow'));
-        $this->assertSame('GET, POST', $response->getHeaderLine('access-control-allow-methods'));
-        $this->assertSame('*', $response->getHeaderLine('access-control-allow-headers'));
-        $this->assertSame('https://wcn.pl', $response->getHeaderLine('access-control-allow-origin'));
-        $this->assertSame('true', $response->getHeaderLine('access-control-allow-credentials'));
-        $this->assertSame('Origin', $response->getHeaderLine('vary'));
-    }
-
-    public function testOptionsWithoutOriginFallsBackToWildcardWithoutCredentials(): void
-    {
-        // No Origin header → request isn't cross-origin per the spec, so we
-        // emit a wildcard ACAO without credentials. Spec-compliant pairing.
-        $dispatcher = Mockery::mock(Dispatcher::class);
-        $dispatcher->shouldReceive('dispatch')
-            ->with('OPTIONS', '/items')
-            ->andReturn([Dispatcher::METHOD_NOT_ALLOWED, ['GET', 'POST']]);
-
-        $request = $this->factory->createServerRequest('OPTIONS', '/items');
-        $next = Mockery::mock(RequestHandlerInterface::class);
-        $next->shouldNotReceive('handle');
-
-        $middleware = new RouterMiddleware($dispatcher, $this->factory);
-        $response = $middleware->process($request, $next);
-
-        $this->assertSame(204, $response->getStatusCode());
-        $this->assertSame('GET, POST', $response->getHeaderLine('allow'));
-        $this->assertSame('GET, POST', $response->getHeaderLine('access-control-allow-methods'));
-        $this->assertSame('*', $response->getHeaderLine('access-control-allow-headers'));
-        $this->assertSame('*', $response->getHeaderLine('access-control-allow-origin'));
-        $this->assertSame('', $response->getHeaderLine('access-control-allow-credentials'));
-        $this->assertSame('', $response->getHeaderLine('vary'));
-    }
-
     public function testFoundInvokesHandlerAndReturnsItsResponse(): void
     {
         $expected = $this->factory->createResponse(201)->withHeader('x-test', 'yes');
@@ -298,14 +249,12 @@ final class RouterMiddlewareTest extends MockeryTestCase
         $this->assertSame('GET', $captured['method']);
     }
 
-    public function testOptionsOnFoundRouteBypassesCorsLogic(): void
+    public function testOptionsOnFoundRouteRunsHandlerUnchanged(): void
     {
-        // When OPTIONS is registered as an explicit route, the FOUND branch
-        // runs the handler and returns its response unchanged. The CORS
-        // preflight machinery in methodNotAllowed() is NOT invoked, so
-        // Access-Control-Allow-* headers are absent unless the handler sets
-        // them itself. Documents and locks this behaviour against accidental
-        // "fixes" that would conflate the two paths.
+        // OPTIONS is just another method as far as the router is concerned.
+        // When an OPTIONS route is registered, the handler runs and its
+        // response is returned verbatim — no special headers are added
+        // (CORS is now an app-level CorsMiddleware concern).
         $handler = fn (): ResponseInterface => $this->factory
             ->createResponse(200)
             ->withHeader('x-handled', 'yes');
@@ -322,11 +271,7 @@ final class RouterMiddlewareTest extends MockeryTestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('yes', $response->getHeaderLine('x-handled'));
-        // No CORS headers from methodNotAllowed leaked through.
-        $this->assertFalse($response->hasHeader('access-control-allow-methods'));
-        $this->assertFalse($response->hasHeader('access-control-allow-headers'));
         $this->assertFalse($response->hasHeader('access-control-allow-origin'));
-        $this->assertFalse($response->hasHeader('access-control-allow-credentials'));
         $this->assertFalse($response->hasHeader('vary'));
         $this->assertFalse($response->hasHeader('allow'));
     }

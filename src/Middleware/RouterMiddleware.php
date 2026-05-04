@@ -42,7 +42,9 @@ final class RouterMiddleware implements MiddlewareInterface
                 return $this->responseFactory->createResponse(404);
 
             case Dispatcher::METHOD_NOT_ALLOWED:
-                return $this->methodNotAllowed($request, $routeInfo[1]);
+                return $this->responseFactory
+                    ->createResponse(405)
+                    ->withHeader('allow', implode(', ', $routeInfo[1]));
 
             case Dispatcher::FOUND:
                 /** @var array<string, string> $parameters */
@@ -59,39 +61,5 @@ final class RouterMiddleware implements MiddlewareInterface
             default:
                 throw new RuntimeException('Unknown dispatch result');
         }
-    }
-
-    /**
-     * @param list<string> $allowed Allowed HTTP methods for this route.
-     */
-    private function methodNotAllowed(ServerRequestInterface $request, array $allowed): ResponseInterface
-    {
-        $allowedMethods = implode(', ', $allowed);
-
-        if ($request->getMethod() !== 'OPTIONS') {
-            return $this->responseFactory
-                ->createResponse(405)
-                ->withHeader('allow', $allowedMethods);
-        }
-
-        // Permissive CORS preflight fallback. Reflects Origin when present so
-        // credentialed cross-origin requests work; falls back to wildcard
-        // (no credentials) otherwise. Users who need stricter rules should
-        // add their own middleware.
-        $response = $this->responseFactory
-            ->createResponse(204)
-            ->withHeader('allow', $allowedMethods)
-            ->withHeader('access-control-allow-methods', $allowedMethods)
-            ->withHeader('access-control-allow-headers', '*');
-
-        $origin = $request->getHeaderLine('origin');
-        if ($origin !== '') {
-            return $response
-                ->withHeader('access-control-allow-origin', $origin)
-                ->withHeader('access-control-allow-credentials', 'true')
-                ->withHeader('vary', 'Origin');
-        }
-
-        return $response->withHeader('access-control-allow-origin', '*');
     }
 }

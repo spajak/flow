@@ -27,7 +27,8 @@ final class ConsoleEmitterTest extends MockeryTestCase
         $stream = Mockery::mock(StreamInterface::class);
         $stream->shouldReceive('isSeekable')->andReturn(true);
         $stream->shouldReceive('rewind')->once();
-        $stream->shouldReceive('getContents')->once()->andReturn('Foo');
+        $stream->shouldReceive('eof')->andReturnValues([false, true]);
+        $stream->shouldReceive('read')->once()->andReturn('Foo');
         $response->shouldReceive('getBody')->andReturn($stream);
 
         /** @disregard P1006 Expected type */
@@ -61,7 +62,8 @@ final class ConsoleEmitterTest extends MockeryTestCase
         $stream = Mockery::mock(StreamInterface::class);
         $stream->shouldReceive('isSeekable')->andReturn(false);
         $stream->shouldNotReceive('rewind');
-        $stream->shouldReceive('getContents')->once()->andReturn('Bar');
+        $stream->shouldReceive('eof')->andReturnValues([false, true]);
+        $stream->shouldReceive('read')->once()->andReturn('Bar');
         $response->shouldReceive('getBody')->andReturn($stream);
 
         /** @disregard P1006 Expected type */

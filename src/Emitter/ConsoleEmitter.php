@@ -57,6 +57,11 @@ final class ConsoleEmitter implements ConsoleEmitterInterface
         if ($stream->isSeekable()) {
             $stream->rewind();
         }
-        $this->output->write("\n" . $stream->getContents() . "\n");
+
+        $this->output->write("\n");
+        while (!$stream->eof()) {
+            $this->output->write($stream->read(1024 * 8), false, OutputInterface::OUTPUT_RAW);
+        }
+        $this->output->write("\n");
     }
 }
