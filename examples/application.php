@@ -7,10 +7,8 @@ $app = new Flow\Application();
 // Register services (using: php-di/php-di)
 // -----------------------------------------------------------------------------
 $services = [];
-$services['hello'] = function () {
-    return new class {
-        public function sayHello($name) { return "Hello {$name}!"; }
-    };
+$services['hello'] = fn () => new class {
+    public function sayHello($name) { return "Hello {$name}!"; }
 };
 $app->getContainerBuilder()->addDefinitions($services);
 
@@ -44,13 +42,11 @@ use Flow\Command\RequestCommand;
 use Flow\Emitter\ConsoleEmitter;
 
 $commands = [];
-$commands['request'] = function () use ($app) {
-    return new RequestCommand(
-        $app->getServerRequestCreator(),
-        $app->getBroker(),
-        new ConsoleEmitter()
-    );
-};
+$commands['request'] = fn () => new RequestCommand(
+    $app->getServerRequestCreator(),
+    $app->getBroker(),
+    new ConsoleEmitter()
+);
 $app->getCommandLoader()->addFactories($commands);
 
 return $app->run();

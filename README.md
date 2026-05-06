@@ -24,10 +24,8 @@ Register services (using: [php-di/php-di](https://github.com/PHP-DI/PHP-DI)):
 
 ```php
 $services = [];
-$services['hello'] = function() {
-    return new class {
-        public function sayHello($name) { return "Hello {$name}!"; }
-    };
+$services['hello'] = fn() => new class {
+    public function sayHello($name) { return "Hello {$name}!"; }
 };
 $app->getContainerBuilder()->addDefinitions($services);
 ```
@@ -43,6 +41,20 @@ $app->getRouteCollector()->get('/hello[/{name}]', function($request, $name = 'Wo
     );
     return $response;
 });
+```
+
+Register middleware (using: [northwoods/broker](https://github.com/northwoods/broker)):
+
+```php
+$app->getBroker()->append(new MyMiddleware);
+```
+
+…or defer construction until after bootstrap when the middleware needs services from the container:
+
+```php
+$app->getBroker()->appendDeferred(fn() => new MyMiddleware(
+    $app->getContainer()->get('hello'),
+));
 ```
 
 Register console commands (using: [symfony/console](https://github.com/symfony/console)):
@@ -68,13 +80,11 @@ use Flow\Command\RequestCommand;
 use Flow\Emitter\ConsoleEmitter;
 
 $commands = [];
-$commands['request'] = function() use ($app) {
-    return new RequestCommand(
-        $app->getServerRequestCreator(),
-        $app->getBroker(),
-        new ConsoleEmitter
-    );
-};
+$commands['request'] = fn() => new RequestCommand(
+    $app->getServerRequestCreator(),
+    $app->getBroker(),
+    new ConsoleEmitter
+);
 $app->getCommandLoader()->addFactories($commands);
 ```
 
