@@ -2,7 +2,6 @@
 
 namespace Flow\Middleware;
 
-use LogicException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -12,7 +11,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  * PSR-15 wrapper that defers middleware construction until first dispatch.
  *
  * Lets middleware that depends on container services be registered during
- * bootstrap, before the container itself is built.
+ * bootstrap, before the container itself is built. A factory that returns
+ * the wrong type is caught by PHP's property type enforcement on assignment.
  */
 final class LazyMiddleware implements MiddlewareInterface
 {
@@ -23,17 +23,7 @@ final class LazyMiddleware implements MiddlewareInterface
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if ($this->real === null) {
-            $real = ($this->factory)();
-            if (!$real instanceof MiddlewareInterface) {
-                throw new LogicException(sprintf(
-                    'Lazy middleware factory must return a %s; got %s.',
-                    MiddlewareInterface::class,
-                    get_debug_type($real),
-                ));
-            }
-            $this->real = $real;
-        }
+        $this->real ??= ($this->factory)();
         return $this->real->process($request, $handler);
     }
 }

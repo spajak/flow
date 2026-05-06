@@ -3,7 +3,6 @@
 namespace Tests\Middleware;
 
 use Flow\Middleware\LazyMiddleware;
-use LogicException;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -11,6 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use stdClass;
+use TypeError;
 
 final class LazyMiddlewareTest extends MockeryTestCase
 {
@@ -69,11 +69,12 @@ final class LazyMiddlewareTest extends MockeryTestCase
 
     public function testThrowsWhenFactoryReturnsNonMiddleware(): void
     {
+        // Property type enforcement on $real catches a bad factory return at
+        // assignment — no custom validation in LazyMiddleware itself.
         $factory = new Psr17Factory();
         $lazy = new LazyMiddleware(fn () => new stdClass());
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(MiddlewareInterface::class);
+        $this->expectException(TypeError::class);
 
         $lazy->process(
             $factory->createServerRequest('GET', '/'),

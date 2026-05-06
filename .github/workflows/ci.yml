@@ -39,5 +39,10 @@ jobs:
       - name: PHPUnit
         run: composer test
 
+      - name: Smoke-test example
+        run: |
+          php examples/application.php hello | grep -q "^Hello World!$"
+          php examples/application.php request GET /hello | grep -q "^blessed: maybe$"
+
       - name: PHPStan
         run: composer analyse

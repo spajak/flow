@@ -23,6 +23,14 @@ $app->getRouteCollector()->get('/hello[/{name}]', function ($request, $name = 'W
     return $response;
 });
 
+// Register middleware (using: northwoods/broker)
+// -----------------------------------------------------------------------------
+use Flow\Middleware\CallbackMiddleware;
+
+$app->getBroker()->append(new CallbackMiddleware(
+    fn ($req, $h) => $h->handle($req)->withHeader('blessed', 'maybe')
+));
+
 // Register console commands (using: symfony/console)
 // -----------------------------------------------------------------------------
 use Symfony\Component\Console\Input\InputInterface;
