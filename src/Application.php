@@ -8,6 +8,7 @@ use Flow\Middleware\RouterMiddleware;
 
 use DI\Container;
 use DI\ContainerBuilder;
+use function DI\value;
 use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
 use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
 use FastRoute\RouteCollector;
@@ -68,8 +69,8 @@ final class Application
         $this->containerBuilder->useAttributes(false);
 
         $this->containerBuilder->addDefinitions([
-            'console' => fn (): Console => $this->console,
-            'http_factory' => fn (): HttpFactory => $this->httpFactory,
+            'console' => value($this->console),
+            'http_factory' => value($this->httpFactory),
         ]);
     }
 

@@ -7,6 +7,8 @@ use DI\ContainerBuilder;
 use FastRoute\RouteCollector;
 use Flow\Application;
 use Flow\Console\CommandLoader\LazyCommandLoader;
+use Flow\Middleware\RouterMiddleware;
+use Mockery;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 use Northwoods\Broker\Broker;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -191,6 +193,28 @@ final class ApplicationTest extends MockeryTestCase
         $this->assertSame('pong', (string) $response->getBody());
         $this->assertSame(['1'], $response->getHeader('X-API-Version'));
         $this->assertContains('Accept-Version', $response->getHeader('Vary'));
+    }
+
+    public function testRouterMiddlewareIsAppendedLastDuringBootstrap(): void
+    {
+        $app = new Application();
+
+        // Marker — anything that isn't a RouterMiddleware will do.
+        $marker = Mockery::mock(\Psr\Http\Server\MiddlewareInterface::class);
+        $app->getBroker()->append($marker);
+
+        $this->bootstrap($app);
+
+        $queue = (new ReflectionClass(Broker::class))
+            ->getProperty('middleware')
+            ->getValue($app->getBroker());
+
+        $this->assertInstanceOf(
+            RouterMiddleware::class,
+            end($queue),
+            'Bootstrap must keep RouterMiddleware as the last entry in the broker so '
+            . 'user-appended middleware always runs before routing.',
+        );
     }
 
     private function bootstrap(Application $app): void
