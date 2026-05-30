@@ -10,6 +10,7 @@ use DI\Container;
 use DI\ContainerBuilder;
 use function DI\value;
 use FastRoute\DataGenerator\GroupCountBased as GroupCountBasedGenerator;
+use FastRoute\Dispatcher;
 use FastRoute\Dispatcher\GroupCountBased as RouteDispatcher;
 use FastRoute\RouteCollector;
 use FastRoute\RouteParser\Std as StdRouteParser;
@@ -37,12 +38,13 @@ final class Application
     private bool $bootstrapped = false;
     private readonly Broker $broker;
     private readonly RouteCollector $routeCollector;
+    private readonly Dispatcher $dispatcher;
     private readonly Console $console;
     private readonly LazyCommandLoader $commandLoader;
     private readonly HttpFactory $httpFactory;
     /** @var ContainerBuilder<Container> */
     private readonly ContainerBuilder $containerBuilder;
-    private ?Container $container = null;
+    private readonly Container $container;
 
     public function __construct()
     {
@@ -113,9 +115,16 @@ final class Application
             throw new LogicException('Container is not available before bootstrap.');
         }
 
-        /** @var Container $container — narrowed by $bootstrapped */
-        $container = $this->container;
-        return $container;
+        return $this->container;
+    }
+
+    public function getDispatcher(): Dispatcher
+    {
+        if (!$this->bootstrapped) {
+            throw new LogicException('Dispatcher is not available before bootstrap.');
+        }
+
+        return $this->dispatcher;
     }
 
     public function getServerRequestCreator(): ServerRequestCreatorInterface
@@ -149,8 +158,8 @@ final class Application
 
         $this->container = $this->containerBuilder->build();
 
-        $dispatcher = new RouteDispatcher($this->routeCollector->getData());
-        $router = new RouterMiddleware($dispatcher, $this->httpFactory);
+        $this->dispatcher = new RouteDispatcher($this->routeCollector->getData());
+        $router = new RouterMiddleware($this->dispatcher, $this->httpFactory);
         $this->broker->append($router);
 
         $this->bootstrapped = true;

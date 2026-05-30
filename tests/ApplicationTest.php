@@ -4,6 +4,7 @@ namespace Tests;
 
 use DI\Container;
 use DI\ContainerBuilder;
+use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Flow\Application;
 use Flow\Console\CommandLoader\LazyCommandLoader;
@@ -59,6 +60,43 @@ final class ApplicationTest extends MockeryTestCase
         $this->expectExceptionMessageMatches('/bootstrap/i');
 
         $app->getContainer();
+    }
+
+    public function testGetDispatcherBeforeBootstrapThrows(): void
+    {
+        $app = new Application();
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessageMatches('/bootstrap/i');
+
+        $app->getDispatcher();
+    }
+
+    public function testGetDispatcherAfterBootstrapReturnsDispatcher(): void
+    {
+        $app = new Application();
+        $this->bootstrap($app);
+
+        $this->assertInstanceOf(Dispatcher::class, $app->getDispatcher());
+    }
+
+    public function testGetDispatcherReturnsSameInstanceUsedByRouter(): void
+    {
+        $app = new Application();
+        $this->bootstrap($app);
+
+        // The exposed dispatcher must be the very instance injected into
+        // RouterMiddleware — built once, shared, never duplicated.
+        $queue = (new ReflectionClass(Broker::class))
+            ->getProperty('middleware')
+            ->getValue($app->getBroker());
+        $router = end($queue);
+
+        $routerDispatcher = (new ReflectionClass(RouterMiddleware::class))
+            ->getProperty('dispatcher')
+            ->getValue($router);
+
+        $this->assertSame($app->getDispatcher(), $routerDispatcher);
     }
 
     public function testContainerBuilderRegistersConsoleAndHttpFactory(): void
