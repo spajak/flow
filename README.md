@@ -103,10 +103,22 @@ $ php examples/application.php request GET /hello
 
 ## Lifecycle
 
-Append all middleware to the broker *before* calling `$app->run()`. The router
-middleware is appended last during bootstrap and terminates the pipeline on a
-matched route, so anything appended afterwards is unreachable for matched
-routes.
+Register all middleware, routes and services *before* bootstrap. `$app->run()`
+and `$app->handle($request)` bootstrap on their own. The router middleware is
+appended last during bootstrap and terminates the pipeline on a matched route,
+so anything appended afterwards is unreachable for matched routes; routes and
+services registered afterwards are ignored.
+
+To use the app without the PHP globals (tests, workers), dispatch PSR-7
+requests directly; call `bootstrap()` first if you need services before the
+first request:
+
+```php
+$app->bootstrap();
+$app->getContainer()->get('hello');
+
+$response = $app->handle($app->getHttpFactory()->createServerRequest('GET', '/hello'));
+```
 
 ## Tests & static analysis
 

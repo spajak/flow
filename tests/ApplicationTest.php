@@ -75,7 +75,7 @@ final class ApplicationTest extends MockeryTestCase
     public function testGetDispatcherAfterBootstrapReturnsDispatcher(): void
     {
         $app = new Application();
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $this->assertInstanceOf(Dispatcher::class, $app->getDispatcher());
     }
@@ -83,7 +83,7 @@ final class ApplicationTest extends MockeryTestCase
     public function testGetDispatcherReturnsSameInstanceUsedByRouter(): void
     {
         $app = new Application();
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         // The exposed dispatcher must be the very instance injected into
         // RouterMiddleware — built once, shared, never duplicated.
@@ -113,7 +113,7 @@ final class ApplicationTest extends MockeryTestCase
     public function testBootstrapBuildsContainerAndAppendsRouter(): void
     {
         $app = new Application();
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         // After bootstrap, getContainer() returns the *built* container with
         // the predefined `console` and `http_factory` services.
@@ -131,10 +131,10 @@ final class ApplicationTest extends MockeryTestCase
     {
         $app = new Application();
 
-        $this->bootstrap($app);
+        $app->bootstrap();
         $firstContainer = $app->getContainer();
 
-        $this->bootstrap($app);
+        $app->bootstrap();
         $secondContainer = $app->getContainer();
 
         $this->assertSame(
@@ -155,7 +155,7 @@ final class ApplicationTest extends MockeryTestCase
             'bootstrapped defaults to false.'
         );
 
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $this->assertTrue($flag->getValue($app));
     }
@@ -169,7 +169,7 @@ final class ApplicationTest extends MockeryTestCase
             return $expected;
         });
 
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $request = $app->getHttpFactory()->createServerRequest('GET', '/ping');
         $response = $app->getBroker()->handle($request);
@@ -192,7 +192,7 @@ final class ApplicationTest extends MockeryTestCase
             }
         });
 
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $request = $factory->createServerRequest('GET', '/whatever');
         $response = $app->getBroker()->handle($request);
@@ -222,7 +222,7 @@ final class ApplicationTest extends MockeryTestCase
             }
         });
 
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $request = $factory->createServerRequest('GET', '/ping');
         $response = $app->getBroker()->handle($request);
@@ -241,7 +241,7 @@ final class ApplicationTest extends MockeryTestCase
         $marker = Mockery::mock(\Psr\Http\Server\MiddlewareInterface::class);
         $app->getBroker()->append($marker);
 
-        $this->bootstrap($app);
+        $app->bootstrap();
 
         $queue = (new ReflectionClass(Broker::class))
             ->getProperty('middleware')
@@ -285,10 +285,5 @@ final class ApplicationTest extends MockeryTestCase
         $this->assertSame(200, $first->getStatusCode());
         $this->assertSame(404, $second->getStatusCode());
         $this->assertSame($container, $app->getContainer());
-    }
-
-    private function bootstrap(Application $app): void
-    {
-        (new ReflectionClass($app))->getMethod('bootstrap')->invoke($app);
     }
 }

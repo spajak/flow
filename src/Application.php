@@ -29,9 +29,11 @@ use LogicException;
  *
  * Lifecycle: register middleware on the broker, routes on the route collector,
  * services on the container builder, and commands on the console — all BEFORE
- * calling `run()`. The router middleware is appended last during bootstrap and
+ * bootstrap. `run()` and `handle()` bootstrap on their own; call `bootstrap()`
+ * directly only when services are needed before the first request (tests,
+ * workers). The router middleware is appended last during bootstrap and
  * terminates the pipeline on a matched route, so anything appended after
- * `run()` is unreachable for matched routes.
+ * bootstrap is unreachable for matched routes.
  *
  * @author Sebastian Pająk <spconv@gmail.com>
  */
@@ -156,7 +158,11 @@ final class Application
         return $this->broker->handle($request);
     }
 
-    private function bootstrap(): void
+    /**
+     * Builds the container and route dispatcher, and appends the router.
+     * Idempotent. Routes and services registered afterwards are ignored.
+     */
+    public function bootstrap(): void
     {
         if ($this->bootstrapped) {
             return;
