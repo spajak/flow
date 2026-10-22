@@ -17,6 +17,8 @@ use FastRoute\RouteParser\Std as StdRouteParser;
 use Nyholm\Psr7\Factory\Psr17Factory as HttpFactory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Application as Console;
 
@@ -139,15 +141,19 @@ final class Application
 
     public function run(): void
     {
-        $this->bootstrap();
-
         if (php_sapi_name() === 'cli') {
+            $this->bootstrap();
             $this->console->run();
         } else {
             $request = $this->getServerRequestCreator()->fromGlobals();
-            $response = $this->broker->handle($request);
-            (new HttpEmitter())->emit($response);
+            (new HttpEmitter())->emit($this->handle($request));
         }
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->bootstrap();
+        return $this->broker->handle($request);
     }
 
     private function bootstrap(): void

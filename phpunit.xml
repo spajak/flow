@@ -3,7 +3,7 @@
   bootstrap="vendor/autoload.php"
   colors="true"
   testdox="true"
-  cacheResult="false"
+  recordTestRunHistory="false"
 >
   <testsuites>
     <testsuite name="Unit">

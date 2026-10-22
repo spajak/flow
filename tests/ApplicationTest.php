@@ -255,6 +255,38 @@ final class ApplicationTest extends MockeryTestCase
         );
     }
 
+    public function testHandleBootstrapsAndDispatchesRequest(): void
+    {
+        $app = new Application();
+        $factory = $app->getHttpFactory();
+
+        $app->getRouteCollector()->addRoute('GET', '/ping', function () use ($factory) {
+            return $factory->createResponse(201);
+        });
+
+        $response = $app->handle($factory->createServerRequest('GET', '/ping'));
+
+        $this->assertSame(201, $response->getStatusCode());
+    }
+
+    public function testHandleCanBeCalledRepeatedly(): void
+    {
+        $app = new Application();
+        $factory = $app->getHttpFactory();
+
+        $app->getRouteCollector()->addRoute('GET', '/ping', function () use ($factory) {
+            return $factory->createResponse(200);
+        });
+
+        $first = $app->handle($factory->createServerRequest('GET', '/ping'));
+        $container = $app->getContainer();
+        $second = $app->handle($factory->createServerRequest('GET', '/no/such/route'));
+
+        $this->assertSame(200, $first->getStatusCode());
+        $this->assertSame(404, $second->getStatusCode());
+        $this->assertSame($container, $app->getContainer());
+    }
+
     private function bootstrap(Application $app): void
     {
         (new ReflectionClass($app))->getMethod('bootstrap')->invoke($app);
